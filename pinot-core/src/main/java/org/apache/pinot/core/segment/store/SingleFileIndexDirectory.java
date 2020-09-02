@@ -36,6 +36,7 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.pinot.common.segment.ReadMode;
 import org.apache.pinot.core.segment.creator.impl.text.LuceneTextIndexCreator;
+import org.apache.pinot.core.segment.creator.impl.inv.text.LuceneFSTIndexCreator;
 import org.apache.pinot.core.segment.index.metadata.SegmentMetadataImpl;
 import org.apache.pinot.core.segment.memory.PinotDataBuffer;
 import org.apache.pinot.spi.env.CommonsConfigurationUtils;
@@ -109,8 +110,28 @@ class SingleFileIndexDirectory extends ColumnIndexDirectory {
     if (type == ColumnIndexType.TEXT_INDEX) {
       return hasTextIndex(column);
     }
+    if (type == ColumnIndexType.FST_INDEX) {
+      return hasFSTIndex(column);
+    }
     IndexKey key = new IndexKey(column, type);
     return columnEntries.containsKey(key);
+  }
+
+  private boolean hasFSTIndex(String column) {
+    String suffix = LuceneFSTIndexCreator.FST_INDEX_FILE_EXTENSION;
+    File[] indexFiles = segmentDirectory.listFiles(new FilenameFilter() {
+      @Override
+      public boolean accept(File dir, String name) {
+        return name.equals(column + suffix);
+      }
+    });
+    if (indexFiles.length > 0) {
+      Preconditions.checkState(indexFiles.length == 1,
+              "Illegal number of fst index files for columns " + column + " segment directory " + segmentDirectory
+                      .getAbsolutePath());
+      return true;
+    }
+    return false;
   }
 
   private boolean hasTextIndex(String column) {

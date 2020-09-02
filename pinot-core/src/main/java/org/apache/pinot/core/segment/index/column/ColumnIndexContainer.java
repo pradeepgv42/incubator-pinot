@@ -52,6 +52,8 @@ public interface ColumnIndexContainer extends Closeable {
    */
   TextIndexReader getTextIndex();
 
+  TextIndexReader getFSTIndex();
+
   /**
    * Returns the dictionary for the column, or {@code null} if it does not exist.
    */

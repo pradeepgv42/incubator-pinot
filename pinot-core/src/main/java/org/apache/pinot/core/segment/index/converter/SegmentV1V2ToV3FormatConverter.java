@@ -34,6 +34,7 @@ import org.apache.pinot.common.segment.ReadMode;
 import org.apache.pinot.core.indexsegment.generator.SegmentVersion;
 import org.apache.pinot.core.segment.creator.impl.V1Constants;
 import org.apache.pinot.core.segment.creator.impl.text.LuceneTextIndexCreator;
+import org.apache.pinot.core.segment.creator.impl.inv.text.LuceneFSTIndexCreator;
 import org.apache.pinot.core.segment.index.metadata.SegmentMetadataImpl;
 import org.apache.pinot.core.segment.index.readers.text.LuceneTextIndexReader;
 import org.apache.pinot.core.segment.memory.PinotDataBuffer;
@@ -82,6 +83,7 @@ public class SegmentV1V2ToV3FormatConverter implements SegmentFormatConverter {
     createMetadataFile(v2SegmentDirectory, v3TempDirectory);
     copyCreationMetadataIfExists(v2SegmentDirectory, v3TempDirectory);
     copyLuceneTextIndexIfExists(v2SegmentDirectory, v3TempDirectory);
+    copyLuceneFSTIndexFiles(v2SegmentDirectory, v3TempDirectory);
     copyIndexData(v2SegmentDirectory, v2Metadata, v3TempDirectory);
 
     File newLocation = SegmentDirectoryPaths.segmentDirectoryFor(v2SegmentDirectory, SegmentVersion.v3);
@@ -225,9 +227,26 @@ public class SegmentV1V2ToV3FormatConverter implements SegmentFormatConverter {
     }
   }
 
+  private void copyLuceneFSTIndexFiles(File segmentDirectory, File v3Dir) throws IOException {
+    File[] fstIndexFiles = segmentDirectory.listFiles(new FilenameFilter() {
+      @Override
+      public boolean accept(File dir, String name) {
+        return name.endsWith(LuceneFSTIndexCreator.FST_INDEX_FILE_EXTENSION);
+      }
+    });
+
+    for (File fstIndexFile : fstIndexFiles) {
+      File v3File = new File(v3Dir, fstIndexFile.getName());
+      LOGGER.info("Copying {} to {}", fstIndexFile.toPath(), v3File.toPath());
+      Files.copy(fstIndexFile.toPath(), v3File.toPath());
+    }
+  }
+
   private void copyLuceneTextIndexIfExists(File segmentDirectory, File v3Dir)
       throws IOException {
     // TODO: see if this can be done by reusing some existing methods
+
+
     String suffix = LuceneTextIndexCreator.LUCENE_TEXT_INDEX_FILE_EXTENSION;
     File[] textIndexFiles = segmentDirectory.listFiles(new FilenameFilter() {
       @Override

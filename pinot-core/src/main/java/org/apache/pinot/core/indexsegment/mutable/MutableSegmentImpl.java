@@ -63,6 +63,7 @@ import org.apache.pinot.core.segment.index.readers.InvertedIndexReader;
 import org.apache.pinot.core.segment.index.readers.MutableForwardIndex;
 import org.apache.pinot.core.segment.index.readers.ValidDocIndexReader;
 import org.apache.pinot.core.segment.index.readers.ValidDocIndexReaderImpl;
+import org.apache.pinot.core.segment.index.readers.TextIndexReader;
 import org.apache.pinot.core.segment.virtualcolumn.VirtualColumnContext;
 import org.apache.pinot.core.segment.virtualcolumn.VirtualColumnProvider;
 import org.apache.pinot.core.segment.virtualcolumn.VirtualColumnProviderFactory;
@@ -221,6 +222,7 @@ public class MutableSegmentImpl implements MutableSegment {
     Set<String> noDictionaryColumns = config.getNoDictionaryColumns();
     Set<String> invertedIndexColumns = config.getInvertedIndexColumns();
     Set<String> textIndexColumns = config.getTextIndexColumns();
+    Set<String> fstIndexColumns = config.getFSTIndexColumns();
 
     int avgNumMultiValues = config.getAvgNumMultiValues();
 
@@ -328,8 +330,10 @@ public class MutableSegmentImpl implements MutableSegment {
 
       // TODO: Support range index and bloom filter for mutable segment
       _indexContainerMap.put(column,
-          new IndexContainer(fieldSpec, partitionFunction, partitions, new NumValuesInfo(), forwardIndex, dictionary,
-              invertedIndexReader, null, textIndex, null, nullValueVector));
+          new IndexContainer(fieldSpec, fstIndexColumns.contains(column),
+              partitionFunction, partitions, new NumValuesInfo(), forwardIndex, dictionary,
+              invertedIndexReader, null, textIndex, null,
+              null, nullValueVector));
     }
 
     if (_realtimeLuceneReaders != null) {
@@ -1047,11 +1051,16 @@ public class MutableSegmentImpl implements MutableSegment {
     int _dictId = Integer.MIN_VALUE;
     int[] _dictIds;
 
-    IndexContainer(FieldSpec fieldSpec, @Nullable PartitionFunction partitionFunction,
-        @Nullable Set<Integer> partitions, NumValuesInfo numValuesInfo, MutableForwardIndex forwardIndex,
-        @Nullable BaseMutableDictionary dictionary, @Nullable RealtimeInvertedIndexReader invertedIndex,
-        @Nullable InvertedIndexReader rangeIndex, @Nullable RealtimeLuceneTextIndexReader textIndex,
-        @Nullable BloomFilterReader bloomFilter, @Nullable MutableNullValueVector nullValueVector) {
+    boolean _fstIndexEnabled;
+
+    IndexContainer(
+        FieldSpec fieldSpec, boolean fstIndexEnabled,
+        @Nullable PartitionFunction partitionFunction, @Nullable Set<Integer> partitions,
+        NumValuesInfo numValuesInfo, MutableForwardIndex forwardIndex, @Nullable BaseMutableDictionary dictionary,
+        @Nullable RealtimeInvertedIndexReader invertedIndex, @Nullable InvertedIndexReader rangeIndex,
+        @Nullable RealtimeLuceneTextIndexReader textIndex, @Nullable TextIndexReader fstIndex,
+        @Nullable BloomFilterReader bloomFilter,
+        @Nullable MutableNullValueVector nullValueVector) {
       _fieldSpec = fieldSpec;
       _partitionFunction = partitionFunction;
       _partitions = partitions;
@@ -1063,12 +1072,14 @@ public class MutableSegmentImpl implements MutableSegment {
       _textIndex = textIndex;
       _bloomFilter = bloomFilter;
       _nullValueVector = nullValueVector;
+      _fstIndexEnabled = fstIndexEnabled;
     }
 
     DataSource toDataSource() {
       return new MutableDataSource(_fieldSpec, _numDocsIndexed, _numValuesInfo._numValues,
-          _numValuesInfo._maxNumValuesPerMVEntry, _partitionFunction, _partitions, _minValue, _maxValue, _forwardIndex,
-          _dictionary, _invertedIndex, _rangeIndex, _textIndex, _bloomFilter, _nullValueVector);
+          _numValuesInfo._maxNumValuesPerMVEntry, _fstIndexEnabled, _partitionFunction, _partitions, _minValue, _maxValue, _forwardIndex,
+          _dictionary, _invertedIndex, _rangeIndex, _textIndex, null,
+          _bloomFilter, _nullValueVector);
     }
 
     @Override

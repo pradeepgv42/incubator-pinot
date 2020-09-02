@@ -1,5 +1,5 @@
 {
-  "schemaName": "testDataMV",
+  "schemaName": "testDataSchema4",
   "dimensionFieldSpecs": [
     {
       "name": "column1",
@@ -22,11 +22,7 @@
       "dataType": "STRING"
     },
     {
-      "name": "newTextColRaw",
-      "dataType": "STRING"
-    },
-    {
-      "name": "newTextColDict",
+      "name": "newFSTColDict",
       "dataType": "STRING"
     },
     {

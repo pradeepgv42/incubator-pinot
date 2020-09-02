@@ -23,7 +23,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+
 import org.apache.pinot.core.common.DataSource;
+import org.apache.pinot.core.common.DataSourceMetadata;
 import org.apache.pinot.core.indexsegment.IndexSegment;
 import org.apache.pinot.core.operator.filter.BaseFilterOperator;
 import org.apache.pinot.core.operator.filter.BitmapBasedFilterOperator;
@@ -32,13 +34,16 @@ import org.apache.pinot.core.operator.filter.ExpressionFilterOperator;
 import org.apache.pinot.core.operator.filter.FilterOperatorUtils;
 import org.apache.pinot.core.operator.filter.MatchAllFilterOperator;
 import org.apache.pinot.core.operator.filter.TextMatchFilterOperator;
+import org.apache.pinot.core.operator.filter.predicate.FSTBasedRegexpPredicateEvaluatorFactory;
 import org.apache.pinot.core.operator.filter.predicate.PredicateEvaluator;
 import org.apache.pinot.core.operator.filter.predicate.PredicateEvaluatorProvider;
 import org.apache.pinot.core.query.request.context.ExpressionContext;
 import org.apache.pinot.core.query.request.context.FilterContext;
 import org.apache.pinot.core.query.request.context.QueryContext;
 import org.apache.pinot.core.query.request.context.predicate.Predicate;
+import org.apache.pinot.core.query.request.context.predicate.RegexpLikePredicate;
 import org.apache.pinot.core.query.request.context.predicate.TextMatchPredicate;
+import org.apache.pinot.core.segment.index.datasource.MutableDataSource;
 import org.apache.pinot.core.segment.index.readers.NullValueVectorReader;
 import org.apache.pinot.core.segment.index.readers.ValidDocIndexReader;
 
@@ -122,8 +127,28 @@ public class FilterPlanNode implements PlanNode {
           DataSource dataSource = _indexSegment.getDataSource(lhs.getIdentifier());
           switch (predicate.getType()) {
             case TEXT_MATCH:
-              return new TextMatchFilterOperator(dataSource.getTextIndex(),
-                  ((TextMatchPredicate) predicate).getValue(), _numDocs);
+                return new TextMatchFilterOperator(
+                        dataSource.getTextIndex(),
+                        ((TextMatchPredicate) predicate).getValue(),
+                        _numDocs);
+            case REGEXP_LIKE:
+              PredicateEvaluator evaluator = null;
+              if (dataSource.getFSTIndex() != null) {
+                evaluator = FSTBasedRegexpPredicateEvaluatorFactory.newFSTBasedEvaluator(
+                        dataSource.getFSTIndex(),
+                        ((RegexpLikePredicate) predicate).getValue());
+              } else if (dataSource instanceof MutableDataSource &&
+                      ((MutableDataSource) dataSource).hasFSTIndexEnabled()) {
+                evaluator = FSTBasedRegexpPredicateEvaluatorFactory.newAutomatonBasedEvaluator(
+                        dataSource.getDictionary(),
+                        ((RegexpLikePredicate) predicate).getValue());
+              } else {
+                evaluator = PredicateEvaluatorProvider
+                        .getPredicateEvaluator(predicate, dataSource.getDictionary(),
+                                dataSource.getDataSourceMetadata().getDataType());
+              }
+              return FilterOperatorUtils.getLeafFilterOperator(
+                      evaluator, dataSource, _numDocs);
             case IS_NULL:
               NullValueVectorReader nullValueVector = dataSource.getNullValueVector();
               if (nullValueVector != null) {

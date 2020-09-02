@@ -69,6 +69,7 @@ public class SegmentGeneratorConfig {
   private Map<String, ChunkCompressorFactory.CompressionType> _rawIndexCompressionType = new HashMap<>();
   private List<String> _invertedIndexCreationColumns = new ArrayList<>();
   private List<String> _textIndexCreationColumns = new ArrayList<>();
+  private List<String> _fstIndexCreationColumns = new ArrayList<>();
   private List<String> _columnSortOrder = new ArrayList<>();
   private List<String> _varLengthDictionaryColumns = new ArrayList<>();
   private String _inputFilePath = null;
@@ -177,6 +178,7 @@ public class SegmentGeneratorConfig {
       }
 
       extractTextIndexColumnsFromTableConfig(tableConfig);
+      extractFSTIndexColumnsFromTableConfig(tableConfig);
 
       _nullHandlingEnabled = indexingConfig.isNullHandlingEnabled();
     }
@@ -218,6 +220,17 @@ public class SegmentGeneratorConfig {
       for (FieldConfig fieldConfig : fieldConfigList) {
         if (fieldConfig.getIndexType() == FieldConfig.IndexType.TEXT) {
           _textIndexCreationColumns.add(fieldConfig.getName());
+        }
+      }
+    }
+  }
+
+  private void extractFSTIndexColumnsFromTableConfig(TableConfig tableConfig) {
+    List<FieldConfig> fieldConfigList = tableConfig.getFieldConfigList();
+    if (fieldConfigList != null) {
+      for (FieldConfig fieldConfig : fieldConfigList) {
+        if (fieldConfig.getIndexType() == FieldConfig.IndexType.FST) {
+          _fstIndexCreationColumns.add(fieldConfig.getName());
         }
       }
     }
@@ -272,6 +285,10 @@ public class SegmentGeneratorConfig {
     return _textIndexCreationColumns;
   }
 
+  public List<String> getFSTIndexCreationColumns() {
+    return _fstIndexCreationColumns;
+  }
+
   public List<String> getColumnSortOrder() {
     return _columnSortOrder;
   }
@@ -296,6 +313,12 @@ public class SegmentGeneratorConfig {
   public void setTextIndexCreationColumns(List<String> textIndexCreationColumns) {
     if (textIndexCreationColumns != null) {
       _textIndexCreationColumns.addAll(textIndexCreationColumns);
+    }
+  }
+
+  public void setFSTIndexCreationColumns(List<String> fstIndexCreationColumns) {
+    if (fstIndexCreationColumns != null) {
+      _fstIndexCreationColumns.addAll(fstIndexCreationColumns);
     }
   }
 

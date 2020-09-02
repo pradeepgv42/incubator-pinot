@@ -51,6 +51,7 @@ import org.apache.pinot.core.segment.creator.impl.fwd.SingleValueUnsortedForward
 import org.apache.pinot.core.segment.creator.impl.fwd.SingleValueVarByteRawIndexCreator;
 import org.apache.pinot.core.segment.creator.impl.inv.OffHeapBitmapInvertedIndexCreator;
 import org.apache.pinot.core.segment.creator.impl.inv.OnHeapBitmapInvertedIndexCreator;
+import org.apache.pinot.core.segment.creator.impl.inv.text.LuceneFSTIndexCreator;
 import org.apache.pinot.core.segment.creator.impl.nullvalue.NullValueVectorCreator;
 import org.apache.pinot.core.segment.creator.impl.text.LuceneTextIndexCreator;
 import org.apache.pinot.spi.config.table.FieldConfig;
@@ -88,6 +89,7 @@ public class SegmentColumnarIndexCreator implements SegmentCreator {
   private Map<String, ForwardIndexCreator> _forwardIndexCreatorMap = new HashMap<>();
   private Map<String, DictionaryBasedInvertedIndexCreator> _invertedIndexCreatorMap = new HashMap<>();
   private Map<String, TextIndexCreator> _textIndexCreatorMap = new HashMap<>();
+  private Map<String, DictionaryBasedInvertedIndexCreator> _fstIndexCreatorMap = new HashMap<>();
   private Map<String, NullValueVectorCreator> _nullValueVectorCreatorMap = new HashMap<>();
   private String segmentName;
   private Schema schema;
@@ -97,6 +99,7 @@ public class SegmentColumnarIndexCreator implements SegmentCreator {
   private boolean _nullHandlingEnabled;
 
   private final Set<String> _textIndexColumns = new HashSet<>();
+  private final Set<String> _fstIndexColumns = new HashSet<>();
 
   @Override
   public void init(SegmentGeneratorConfig segmentCreationSpec, SegmentIndexCreationInfo segmentIndexCreationInfo,
@@ -127,6 +130,13 @@ public class SegmentColumnarIndexCreator implements SegmentCreator {
       Preconditions.checkState(schema.hasColumn(columnName),
           "Cannot create text index for column: %s because it is not in schema", columnName);
       _textIndexColumns.add(columnName);
+    }
+
+    for (String columnName : config.getFSTIndexCreationColumns()) {
+        Preconditions.checkState(
+                schema.hasColumn(columnName),
+                "Cannot create text index for column: %s because it is not in schema", columnName);
+        _fstIndexColumns.add(columnName);
     }
 
     // Initialize creators for dictionary, forward index and inverted index
@@ -216,7 +226,18 @@ public class SegmentColumnarIndexCreator implements SegmentCreator {
             .put(columnName, new LuceneTextIndexCreator(columnName, _indexDir, true /* commitOnClose */));
       }
 
-      _nullHandlingEnabled = config.isNullHandlingEnabled();
+      if (_fstIndexColumns.contains(columnName) && indexCreationInfo.isCreateDictionary()) {
+        _fstIndexCreatorMap.put(
+                columnName,
+                new LuceneFSTIndexCreator(
+                        _indexDir, columnName,
+                        indexCreationInfo.getDistinctValueCount(),
+                        (String[])indexCreationInfo.getSortedUniqueElementsArray()));
+        LOGGER.info("FST and Text index for " + columnName);
+      }
+
+
+        _nullHandlingEnabled = config.isNullHandlingEnabled();
       if (_nullHandlingEnabled) {
         // Initialize Null value vector map
         _nullValueVectorCreatorMap.put(columnName, new NullValueVectorCreator(_indexDir, columnName));
@@ -328,11 +349,16 @@ public class SegmentColumnarIndexCreator implements SegmentCreator {
           int dictId = dictionaryCreator.indexOfSV(columnValueToIndex);
           // store the docID -> dictID mapping in forward index
           forwardIndexCreator.putDictId(dictId);
-          DictionaryBasedInvertedIndexCreator invertedIndexCreator = _invertedIndexCreatorMap.get(columnName);
+          DictionaryBasedInvertedIndexCreator invertedIndexCreator =
+                  _invertedIndexCreatorMap.get(columnName);
           if (invertedIndexCreator != null) {
             // if inverted index enabled during segment creation,
             // then store dictID -> docID mapping in inverted index
             invertedIndexCreator.add(dictId);
+          }
+
+          if (_fstIndexCreatorMap.containsKey(columnName)) {
+            _fstIndexCreatorMap.get(columnName).add(dictId);
           }
         } else {
           // non-dictionary encoded SV column
@@ -397,6 +423,9 @@ public class SegmentColumnarIndexCreator implements SegmentCreator {
     }
     for (TextIndexCreator textIndexCreator : _textIndexCreatorMap.values()) {
       textIndexCreator.seal();
+    }
+    for (DictionaryBasedInvertedIndexCreator fstIndexCreator : _fstIndexCreatorMap.values()) {
+      fstIndexCreator.seal();
     }
     for (NullValueVectorCreator nullValueVectorCreator : _nullValueVectorCreatorMap.values()) {
       nullValueVectorCreator.seal();
