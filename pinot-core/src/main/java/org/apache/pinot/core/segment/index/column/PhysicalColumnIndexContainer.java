@@ -34,6 +34,7 @@ import org.apache.pinot.core.segment.index.readers.ForwardIndexReader;
 import org.apache.pinot.core.segment.index.readers.IntDictionary;
 import org.apache.pinot.core.segment.index.readers.InvertedIndexReader;
 import org.apache.pinot.core.segment.index.readers.LongDictionary;
+import org.apache.pinot.core.segment.index.readers.LuceneFSTIndexReader;
 import org.apache.pinot.core.segment.index.readers.NullValueVectorReaderImpl;
 import org.apache.pinot.core.segment.index.readers.OnHeapDoubleDictionary;
 import org.apache.pinot.core.segment.index.readers.OnHeapFloatDictionary;
@@ -65,6 +66,7 @@ public final class PhysicalColumnIndexContainer implements ColumnIndexContainer 
   private final InvertedIndexReader<?> _invertedIndex;
   private final InvertedIndexReader<?> _rangeIndex;
   private final TextIndexReader _textIndex;
+  private final TextIndexReader _fstIndex;
   private final BaseImmutableDictionary _dictionary;
   private final BloomFilterReader _bloomFilterReader;
   private final NullValueVectorReaderImpl _nullValueVectorReader;
@@ -78,12 +80,15 @@ public final class PhysicalColumnIndexContainer implements ColumnIndexContainer 
     boolean loadTextIndex = false;
     boolean loadOnHeapDictionary = false;
     boolean loadBloomFilter = false;
+    boolean loadFSTIndex = false;
+
     if (indexLoadingConfig != null) {
       loadInvertedIndex = indexLoadingConfig.getInvertedIndexColumns().contains(columnName);
       loadRangeIndex = indexLoadingConfig.getRangeIndexColumns().contains(columnName);
       loadOnHeapDictionary = indexLoadingConfig.getOnHeapDictionaryColumns().contains(columnName);
       loadBloomFilter = indexLoadingConfig.getBloomFilterColumns().contains(columnName);
       loadTextIndex = indexLoadingConfig.getTextIndexColumns().contains(columnName);
+      loadFSTIndex = indexLoadingConfig.getFSTIndexColumns().contains(columnName);
     }
 
     if (segmentReader.hasIndexFor(columnName, ColumnIndexType.NULLVALUE_VECTOR)) {
@@ -123,6 +128,7 @@ public final class PhysicalColumnIndexContainer implements ColumnIndexContainer 
           _forwardIndex = sortedIndexReader;
           _invertedIndex = sortedIndexReader;
           _rangeIndex = null;
+          _fstIndex = null;
           return;
         } else {
           // Unsorted
@@ -141,6 +147,18 @@ public final class PhysicalColumnIndexContainer implements ColumnIndexContainer 
       } else {
         _invertedIndex = null;
       }
+
+
+      if (loadFSTIndex) {
+        if (segmentReader.hasIndexFor(columnName, ColumnIndexType.FST_INDEX)) {
+          _fstIndex = new LuceneFSTIndexReader(segmentIndexDir, columnName);
+        } else {
+          _fstIndex = null;
+        }
+      } else {
+        _fstIndex = null;
+      }
+
       if (loadRangeIndex) {
         _rangeIndex = new RangeIndexReader(segmentReader.getIndexFor(columnName, ColumnIndexType.RANGE_INDEX));
       } else {
@@ -153,6 +171,7 @@ public final class PhysicalColumnIndexContainer implements ColumnIndexContainer 
       _bloomFilterReader = null;
       _rangeIndex = null;
       _invertedIndex = null;
+      _fstIndex = null;
     }
   }
 
@@ -184,6 +203,11 @@ public final class PhysicalColumnIndexContainer implements ColumnIndexContainer 
   @Override
   public BloomFilterReader getBloomFilter() {
     return _bloomFilterReader;
+  }
+
+  @Override
+  public TextIndexReader getFSTIndex() {
+    return _fstIndex;
   }
 
   @Override
@@ -264,6 +288,9 @@ public final class PhysicalColumnIndexContainer implements ColumnIndexContainer 
     }
     if (_textIndex != null) {
       _textIndex.close();
+    }
+    if (_fstIndex != null) {
+      _fstIndex.close();
     }
   }
 }

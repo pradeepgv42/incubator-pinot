@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import org.apache.pinot.core.indexsegment.generator.SegmentVersion;
 import org.apache.pinot.core.segment.creator.impl.V1Constants;
 import org.apache.pinot.core.segment.creator.impl.text.LuceneTextIndexCreator;
+import org.apache.pinot.core.segment.creator.impl.inv.text.LuceneFSTIndexCreator;
 import org.apache.pinot.core.segment.index.readers.text.LuceneTextIndexReader;
 
 
@@ -84,6 +85,13 @@ public class SegmentDirectoryPaths {
     String luceneIndexDirectory = column + LuceneTextIndexCreator.LUCENE_TEXT_INDEX_FILE_EXTENSION;
     return findFormatFile(indexDir, luceneIndexDirectory);
   }
+
+  public static File findFSTIndexIndexFile(File indexDir, String column) {
+    String luceneIndexDirectory = column + LuceneFSTIndexCreator.FST_INDEX_FILE_EXTENSION;
+    return findFormatFile(indexDir, luceneIndexDirectory);
+  }
+
+
 
   @Nullable
   @VisibleForTesting

@@ -47,6 +47,7 @@ public class IndexLoadingConfig {
   private List<String> _sortedColumns = Collections.emptyList();
   private Set<String> _invertedIndexColumns = new HashSet<>();
   private Set<String> _textIndexColumns = new HashSet<>();
+  private Set<String> _fstIndexColumns = new HashSet<>();
   private Set<String> _rangeIndexColumns = new HashSet<>();
   private Set<String> _noDictionaryColumns = new HashSet<>(); // TODO: replace this by _noDictionaryConfig.
   private Map<String, String> _noDictionaryConfig = new HashMap<>();
@@ -114,6 +115,7 @@ public class IndexLoadingConfig {
     }
 
     extractTextIndexColumnsFromTableConfig(tableConfig);
+    extractFSTIndexColumnsFromTableConfig(tableConfig);
 
     Map<String, String> noDictionaryConfig = indexingConfig.getNoDictionaryConfig();
     if (noDictionaryConfig != null) {
@@ -161,6 +163,18 @@ public class IndexLoadingConfig {
         String column = fieldConfig.getName();
         if (fieldConfig.getIndexType() == FieldConfig.IndexType.TEXT) {
           _textIndexColumns.add(column);
+        }
+      }
+    }
+  }
+
+  private void extractFSTIndexColumnsFromTableConfig(TableConfig tableConfig) {
+    List<FieldConfig> fieldConfigList = tableConfig.getFieldConfigList();
+    if (fieldConfigList != null) {
+      for (FieldConfig fieldConfig : fieldConfigList) {
+        String column = fieldConfig.getName();
+        if (fieldConfig.getIndexType() == FieldConfig.IndexType.FST) {
+          _fstIndexColumns.add(column);
         }
       }
     }
@@ -237,6 +251,10 @@ public class IndexLoadingConfig {
     return _textIndexColumns;
   }
 
+  public Set<String> getFSTIndexColumns() {
+    return _fstIndexColumns;
+  }
+
   /**
    * For tests only.
    */
@@ -263,6 +281,12 @@ public class IndexLoadingConfig {
   public void setTextIndexColumns(Set<String> textIndexColumns) {
     _textIndexColumns = textIndexColumns;
   }
+
+  @VisibleForTesting
+  public void setFSTIndexColumns(Set<String> fstIndexColumns) {
+    _fstIndexColumns = fstIndexColumns;
+  }
+
 
   @VisibleForTesting
   public void setBloomFilterColumns(Set<String> bloomFilterColumns) {
