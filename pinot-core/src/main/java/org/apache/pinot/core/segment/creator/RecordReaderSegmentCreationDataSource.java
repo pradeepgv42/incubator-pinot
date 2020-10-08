@@ -50,8 +50,7 @@ public class RecordReaderSegmentCreationDataSource implements SegmentCreationDat
       RecordTransformer recordTransformer = CompositeTransformer
           .getDefaultTransformer(statsCollectorConfig.getTableConfig(), statsCollectorConfig.getSchema());
 
-      SegmentPreIndexStatsCollector collector =
-              new SegmentPreIndexStatsCollectorImpl(statsCollectorConfig);
+      SegmentPreIndexStatsCollector collector = new SegmentPreIndexStatsCollectorImpl(statsCollectorConfig);
       collector.init();
 
       // Gather the stats

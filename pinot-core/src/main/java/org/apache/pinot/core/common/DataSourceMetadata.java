@@ -24,12 +24,11 @@ import org.apache.pinot.core.data.partition.PartitionFunction;
 import org.apache.pinot.spi.data.FieldSpec;
 
 
-
-
 /**
  * The {@code DataSourceMetadata} class contains all the metadata for a column for query execution purpose.
  */
 public interface DataSourceMetadata {
+
   /**
    * Returns the field spec of the column.
    */

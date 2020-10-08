@@ -76,14 +76,11 @@ public class LuceneFSTIndexReader implements TextIndexReader {
     @Override
     public ImmutableRoaringBitmap getDictIds(String searchQuery) {
         try {
-            LOGGER.info("LuceneFSTIndexReader Got query: " + searchQuery);
             MutableRoaringBitmap dictIds = new MutableRoaringBitmap();
             List<Long> matchingIds = RegexpMatcher.regexMatch(searchQuery, this.readFST);
             for (Long matchingId : matchingIds) {
                 dictIds.add(matchingId.intValue());
             }
-
-            LOGGER.info("{} Matching docIds length: {}", dir, dictIds.toArray().length);
             return dictIds.toImmutableRoaringBitmap();
         } catch (Exception ex) {
             LOGGER.error("Error getting matching Ids from FST", ex);

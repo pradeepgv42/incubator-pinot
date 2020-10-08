@@ -57,7 +57,6 @@ public class LuceneFSTIndexCreator implements DictionaryBasedInvertedIndexCreato
                 _fstBuilder.addEntry(sortedEntries[dictId], dictId);
             }
         }
-        LOGGER.info("FST Index file for: " + columnName);
     }
 
     // add SortedDicts should be called in sorted order.
