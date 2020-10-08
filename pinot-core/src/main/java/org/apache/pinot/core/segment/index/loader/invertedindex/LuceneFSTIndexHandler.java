@@ -24,11 +24,7 @@ import org.apache.pinot.core.segment.creator.impl.inv.text.LuceneFSTIndexCreator
 import org.apache.pinot.core.segment.index.metadata.ColumnMetadata;
 import org.apache.pinot.core.segment.index.metadata.SegmentMetadataImpl;
 import org.apache.pinot.core.segment.index.readers.BaseImmutableDictionary;
-import org.apache.pinot.core.segment.index.readers.ForwardIndexReader;
-import org.apache.pinot.core.segment.index.readers.ForwardIndexReaderContext;
 import org.apache.pinot.core.segment.index.readers.StringDictionary;
-import org.apache.pinot.core.segment.index.readers.forward.FixedBitSVForwardIndexReader;
-import org.apache.pinot.core.segment.index.readers.sorted.SortedIndexReaderImpl;
 import org.apache.pinot.core.segment.memory.PinotDataBuffer;
 import org.apache.pinot.core.segment.store.ColumnIndexType;
 import org.apache.pinot.core.segment.store.SegmentDirectory;
@@ -66,21 +62,6 @@ public class LuceneFSTIndexHandler {
             if (columnMetadata != null) {
                 _fstIndexColumns.add(columnMetadata);
             }
-        }
-    }
-
-    private ForwardIndexReader<?> getForwardIndexReader(ColumnMetadata columnMetadata)
-            throws IOException {
-        PinotDataBuffer buffer =
-                _segmentWriter.getIndexFor(columnMetadata.getColumnName(), ColumnIndexType.FORWARD_INDEX);
-        int numRows = columnMetadata.getTotalDocs();
-        int numBitsPerValue = columnMetadata.getBitsPerElement();
-        if (columnMetadata.isSorted()) {
-            // created sorted dictionary based forward index reader
-            return new SortedIndexReaderImpl(buffer, columnMetadata.getCardinality());
-        } else {
-            // create bit-encoded dictionary based forward index reader
-            return new FixedBitSVForwardIndexReader(buffer, numRows, numBitsPerValue);
         }
     }
 

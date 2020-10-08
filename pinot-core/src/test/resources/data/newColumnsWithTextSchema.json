@@ -56,14 +56,6 @@
       "dataType": "INT"
     },
     {
-      "name": "column14",
-      "dataType": "STRING"
-    },
-    {
-      "name": "column15",
-      "dataType": "STRING"
-    },
-    {
       "name": "weeksSinceEpochSunday",
       "dataType": "INT"
     }

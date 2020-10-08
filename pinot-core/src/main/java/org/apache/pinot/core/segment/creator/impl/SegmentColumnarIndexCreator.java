@@ -233,7 +233,6 @@ public class SegmentColumnarIndexCreator implements SegmentCreator {
                         _indexDir, columnName,
                         indexCreationInfo.getDistinctValueCount(),
                         (String[])indexCreationInfo.getSortedUniqueElementsArray()));
-        LOGGER.info("FST and Text index for " + columnName);
       }
 
 
