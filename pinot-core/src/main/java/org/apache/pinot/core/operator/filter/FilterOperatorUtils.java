@@ -59,6 +59,9 @@ public class FilterOperatorUtils {
       }
       return new ScanBasedFilterOperator(predicateEvaluator, dataSource, numDocs);
     } else if (predicateType == Predicate.Type.REGEXP_LIKE) {
+      if (dataSource.getDataSourceMetadata().isSorted()) {
+        return new SortedIndexBasedFilterOperator(predicateEvaluator, dataSource, numDocs);
+      }
       if (dataSource.getInvertedIndex() != null) {
         return new BitmapBasedFilterOperator(predicateEvaluator, dataSource, numDocs);
       }
