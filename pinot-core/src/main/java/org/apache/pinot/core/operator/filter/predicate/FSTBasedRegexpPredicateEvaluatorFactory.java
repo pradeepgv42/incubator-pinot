@@ -22,12 +22,9 @@ package org.apache.pinot.core.operator.filter.predicate;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import org.apache.pinot.core.query.request.context.predicate.Predicate;
-import org.apache.pinot.core.query.request.context.predicate.RegexpLikePredicate;
-import org.apache.pinot.core.segment.creator.impl.V1Constants;
 import org.apache.pinot.core.segment.index.readers.Dictionary;
 import org.apache.pinot.core.segment.index.readers.TextIndexReader;
 import org.apache.pinot.core.util.fst.RegexpMatcher;
-import org.graalvm.compiler.hotspot.nodes.PluginFactory_DimensionsNode;
 import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
 import static org.apache.pinot.core.query.request.context.predicate.Predicate.Type.REGEXP_LIKE;
