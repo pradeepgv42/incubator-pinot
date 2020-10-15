@@ -136,6 +136,7 @@ public class FilterPlanNode implements PlanNode {
               if (dataSource.getFSTIndex() != null) {
                 evaluator = FSTBasedRegexpPredicateEvaluatorFactory.newFSTBasedEvaluator(
                         dataSource.getFSTIndex(),
+                        dataSource.getDictionary(),
                         ((RegexpLikePredicate) predicate).getValue());
               } else if (dataSource instanceof MutableDataSource &&
                       ((MutableDataSource) dataSource).hasFSTIndexEnabled()) {
