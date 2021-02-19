@@ -23,8 +23,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.apache.pinot.core.indexsegment.generator.SegmentVersion;
+import org.apache.pinot.core.segment.creator.impl.V1Constants;
 import org.apache.pinot.core.segment.creator.impl.inv.text.LuceneFSTIndexCreator;
 import org.apache.pinot.core.segment.index.loader.LoaderUtils;
 import org.apache.pinot.core.segment.index.metadata.ColumnMetadata;
@@ -106,7 +109,7 @@ public class LuceneFSTIndexHandler {
   }
 
   private void createFSTIndexForColumn(ColumnMetadata columnMetadata)
-      throws IOException {
+      throws Exception {
     String column = columnMetadata.getColumnName();
     File inProgress = new File(_indexDir, column + ".fst.inprogress");
     File fstIndexFile = new File(_indexDir, column + FST_INDEX_FILE_EXTENSION);
@@ -142,5 +145,9 @@ public class LuceneFSTIndexHandler {
     // Delete the marker file.
     FileUtils.deleteQuietly(inProgress);
     LOGGER.info("Created FST index for segment: {}, column: {}", _segmentName, column);
+    PropertiesConfiguration properties = SegmentMetadataImpl.getPropertiesConfiguration(_indexDir);
+    properties.setProperty(
+        V1Constants.MetadataKeys.Column.getKeyFor(column, V1Constants.MetadataKeys.Column.HAS_FST_INDEX), true);
+    properties.save();
   }
 }

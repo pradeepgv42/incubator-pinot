@@ -329,6 +329,13 @@ public class HelixServerStarter implements ServiceStartable {
     // access the property store, but before receiving state transitions
     _helixManager.addPreConnectCallback(_serverInstance::start);
 
+    // Register message handler factory
+    SegmentMessageHandlerFactory messageHandlerFactory =
+        new SegmentMessageHandlerFactory(fetcherAndLoader, instanceDataManager, serverMetrics);
+    LOGGER.info("Trying to register SegmentMessageHandlerFactory, type: " + Message.MessageType.USER_DEFINE_MSG.toString());
+    _helixManager.getMessagingService()
+        .registerMessageHandlerFactory(Message.MessageType.USER_DEFINE_MSG.toString(), messageHandlerFactory);
+
     LOGGER.info("Connecting Helix manager");
     _helixManager.connect();
     _helixAdmin = _helixManager.getClusterManagmentTool();
@@ -387,12 +394,6 @@ public class HelixServerStarter implements ServiceStartable {
     } else {
       _helixAdmin.removeConfig(_instanceConfigScope, Collections.singletonList(Instance.GRPC_PORT_KEY));
     }
-
-    // Register message handler factory
-    SegmentMessageHandlerFactory messageHandlerFactory =
-        new SegmentMessageHandlerFactory(fetcherAndLoader, instanceDataManager, serverMetrics);
-    _helixManager.getMessagingService()
-        .registerMessageHandlerFactory(Message.MessageType.USER_DEFINE_MSG.toString(), messageHandlerFactory);
 
     serverMetrics.addCallbackGauge(Helix.INSTANCE_CONNECTED_METRIC_NAME, () -> _helixManager.isConnected() ? 1L : 0L);
     _helixManager
