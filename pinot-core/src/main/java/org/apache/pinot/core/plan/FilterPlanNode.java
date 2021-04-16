@@ -53,9 +53,12 @@ import org.apache.pinot.core.segment.index.readers.JsonIndexReader;
 import org.apache.pinot.core.segment.index.readers.NullValueVectorReader;
 import org.apache.pinot.core.segment.index.readers.ValidDocIndexReader;
 import org.apache.pinot.core.util.QueryOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class FilterPlanNode implements PlanNode {
+  private static final Logger LOGGER = LoggerFactory.getLogger(FilterPlanNode.class);
   private final IndexSegment _indexSegment;
   private final QueryContext _queryContext;
   private final int _numDocs;
@@ -196,6 +199,7 @@ public class FilterPlanNode implements PlanNode {
                     .newAutomatonBasedEvaluator(dataSource.getDictionary(),
                         ((RegexpLikePredicate) predicate).getValue());
               } else {
+                LOGGER.info("Using non FST Index for: " + _indexSegment.getSegmentName());
                 evaluator = PredicateEvaluatorProvider.getPredicateEvaluator(predicate, dataSource.getDictionary(),
                     dataSource.getDataSourceMetadata().getDataType());
               }

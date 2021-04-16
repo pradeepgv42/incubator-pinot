@@ -91,6 +91,8 @@ public class RegexpMatcher {
       return Collections.emptyList();
     }
 
+
+
     // Automaton start state and FST start node is added to the queue.
     queue.add(new Path<>(0, _fst.getFirstArc(new FST.Arc<Long>()), _fst.outputs.getNoOutput(), new IntsRefBuilder()));
 
@@ -98,6 +100,8 @@ public class RegexpMatcher {
     final FST.BytesReader fstReader = _fst.getBytesReader();
 
     Transition t = new Transition();
+    int qadds = 1;
+    int totalIters = 0;
     while (queue.size() != 0) {
       final Path<Long> path = queue.remove(queue.size() - 1);
 
@@ -117,6 +121,7 @@ public class RegexpMatcher {
         final int min = t.min;
         final int max = t.max;
         if (min == max) {
+          totalIters+= 1;
           final FST.Arc<Long> nextArc = _fst.findTargetArc(t.min, path.fstNode, scratchArc, fstReader);
           if (nextArc != null) {
             final IntsRefBuilder newInput = new IntsRefBuilder();
@@ -124,10 +129,12 @@ public class RegexpMatcher {
             newInput.append(t.min);
             queue.add(new Path<Long>(t.dest, new FST.Arc<Long>().copyFrom(nextArc),
                 _fst.outputs.add(path.output, nextArc.output), newInput));
+            qadds+=1;
           }
         } else {
           FST.Arc<Long> nextArc = Util.readCeilArc(min, _fst, path.fstNode, scratchArc, fstReader);
           while (nextArc != null && nextArc.label <= max) {
+            totalIters+= 1;
             final IntsRefBuilder newInput = new IntsRefBuilder();
             newInput.copyInts(currentInput.get());
             newInput.append(nextArc.label);
@@ -135,11 +142,13 @@ public class RegexpMatcher {
                 new Path<>(t.dest, new FST.Arc<Long>().copyFrom(nextArc), _fst.outputs.add(path.output, nextArc.output),
                     newInput));
             nextArc = nextArc.isLast() ? null : _fst.readNextRealArc(nextArc, fstReader);
+            qadds+=1;
           }
         }
       }
     }
 
+    LOGGER.info("Query: " + _regexQuery + " QAdds: " + Integer.toString(qadds) + " iters: " + Integer.toString(totalIters) + " States: " + Integer.toString(_automaton.getNumStates()));
     // From the result set of matched entries gather the values stored and return.
     ArrayList<Long> matchedIds = new ArrayList<>();
     for (Path<Long> path : endNodes) {

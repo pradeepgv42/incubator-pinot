@@ -62,7 +62,7 @@ public class LuceneFSTIndexCreatorTest {
     File fstFile = new File(INDEX_DIR, "testFSTColumn" + FST_INDEX_FILE_EXTENSION);
     PinotDataBuffer pinotDataBuffer =
         PinotDataBuffer.mapFile(fstFile, true, 0, fstFile.length(), ByteOrder.BIG_ENDIAN, "fstIndexFile");
-    LuceneFSTIndexReader reader = new LuceneFSTIndexReader(pinotDataBuffer);
+    LuceneFSTIndexReader reader = new LuceneFSTIndexReader(pinotDataBuffer, "");
     int[] matchedDictIds = reader.getDictIds("hello.*").toArray();
     Assert.assertEquals(2, matchedDictIds.length);
     Assert.assertEquals(0, matchedDictIds[0]);

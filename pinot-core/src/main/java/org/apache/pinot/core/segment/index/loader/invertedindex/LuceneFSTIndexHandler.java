@@ -118,6 +118,8 @@ public class LuceneFSTIndexHandler {
       if (_segmentWriter.hasIndexFor(column, ColumnIndexType.FST_INDEX)) {
         // Skip creating fst index if already exists.
         LOGGER.info("Found fst index for column: {}, in segment: {}", column, _segmentName);
+        Long bytes = _segmentWriter.getIndexFor(column, ColumnIndexType.FST_INDEX).size();
+        LOGGER.info("FST Index Size for col: " + column + " Segment:" + _segmentName + " size: " + Long.toString(bytes));
         return;
       }
 
@@ -137,6 +139,8 @@ public class LuceneFSTIndexHandler {
     }
     luceneFSTIndexCreator.seal();
 
+    Long bytes = fstIndexFile.length();
+    LOGGER.info("FST Index Size for Segment:" + _segmentName + " size: " + Long.toString(bytes));
     // For v3, write the generated range index file into the single file and remove it.
     if (_segmentVersion == SegmentVersion.v3) {
       LoaderUtils.writeIndexToV3Format(_segmentWriter, column, fstIndexFile, ColumnIndexType.FST_INDEX);

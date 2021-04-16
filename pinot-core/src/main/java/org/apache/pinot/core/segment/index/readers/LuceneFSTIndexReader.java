@@ -45,12 +45,13 @@ public class LuceneFSTIndexReader implements TextIndexReader {
   private final PinotDataBuffer _dataBuffer;
   private final PinotBufferIndexInput _dataBufferIndexInput;
   private final FST<Long> _readFST;
+  private final String _name;
 
-  public LuceneFSTIndexReader(PinotDataBuffer pinotDataBuffer)
+  public LuceneFSTIndexReader(PinotDataBuffer pinotDataBuffer, String name)
       throws IOException {
     this._dataBuffer = pinotDataBuffer;
     this._dataBufferIndexInput = new PinotBufferIndexInput(this._dataBuffer, 0L, this._dataBuffer.size());
-
+    this._name = name;
     this._readFST = new FST(this._dataBufferIndexInput, PositiveIntOutputs.getSingleton(), new OffHeapFSTStore());
   }
 
@@ -62,12 +63,16 @@ public class LuceneFSTIndexReader implements TextIndexReader {
   @Override
   public ImmutableRoaringBitmap getDictIds(String searchQuery) {
     try {
+      Long start = System.currentTimeMillis();
       MutableRoaringBitmap dictIds = new MutableRoaringBitmap();
       List<Long> matchingIds = RegexpMatcher.regexMatch(searchQuery, this._readFST);
       for (Long matchingId : matchingIds) {
         dictIds.add(matchingId.intValue());
       }
-      return dictIds.toImmutableRoaringBitmap();
+      ImmutableRoaringBitmap result = dictIds.toImmutableRoaringBitmap();
+      Long end = System.currentTimeMillis();
+      LOGGER.info("Time to evaluate searchQuery: " + _name + " buffer_size: " +  Long.toString(_dataBuffer.size()) + " (in ms): " + Long.toString(end - start));
+      return result;
     } catch (Exception ex) {
       LOGGER.error("Error getting matching Ids from FST", ex);
       throw new RuntimeException(ex);

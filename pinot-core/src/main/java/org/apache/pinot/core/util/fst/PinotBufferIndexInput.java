@@ -80,10 +80,8 @@ public class PinotBufferIndexInput extends IndexInput {
     }
 
     @Override
-    public void readBytes(byte[] bytes, int destOffset, int length) throws IOException {
-        for (int i = 0; i < length; i++) {
-            bytes[destOffset] = readByte();
-            destOffset += 1;
-        }
+    public void readBytes(byte[] bytes, int destOffset, int len) throws IOException {
+        pinotDataBuffer.copyTo(this.readPointerOffset, bytes, destOffset, len);
+        this.readPointerOffset += len;
     }
 }
